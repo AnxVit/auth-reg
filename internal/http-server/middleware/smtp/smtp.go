@@ -1,7 +1,7 @@
 package smtpmid
 
 import (
-	"Auth-Reg/internal/http-server/handlers/auth"
+	"Auth-Reg/internal/http-server/handlers/registr"
 	"log/slog"
 	"net/http"
 	"net/smtp"
@@ -37,7 +37,7 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
 			log.Info("SMTP Logger enabled")
-			var req auth.Request
+			var req registr.Request
 
 			err := render.DecodeJSON(r.Body, &req)
 			if err != nil {

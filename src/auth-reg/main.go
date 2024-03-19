@@ -2,7 +2,8 @@ package main
 
 import (
 	"Auth-Reg/internal/config"
-	smtpmid "Auth-Reg/internal/http-server/middleware/smtp"
+	"Auth-Reg/internal/http-server/handlers/registr"
+	smtpMid "Auth-Reg/internal/http-server/middleware/smtp"
 	"Auth-Reg/internal/storage/postgres"
 	"log/slog"
 	"net/http"
@@ -29,7 +30,6 @@ func main() {
 		log.Error("failed to init storage")
 		os.Exit(1)
 	}
-	_ = storage
 
 	router := chi.NewRouter()
 	router.Use(middleware.RequestID)
@@ -37,8 +37,8 @@ func main() {
 	router.Use(middleware.Recoverer)
 
 	router.Group(func(r chi.Router) {
-		r.Use(smtpmid.New(log))
-		//r.Post("/registration", _)
+		r.Use(smtpMid.New(log))
+		r.Post("/registration", registr.New(log, storage))
 	})
 
 	srv := &http.Server{
