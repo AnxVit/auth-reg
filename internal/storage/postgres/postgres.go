@@ -7,6 +7,8 @@ import (
 	"errors"
 	"fmt"
 
+	"Auth-Reg/internal/domain/models"
+
 	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -43,4 +45,20 @@ func (s *Storage) SaveUser(name, email, password string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 	return nil
+}
+
+func (s *Storage) User(email string) (models.User, error) {
+	const op = "storage.postgres.User"
+
+	var user models.User
+	err := s.db.QueryRow(context.Background(),
+		"select id, name, email, password from users where email = $1", email).Scan(&user.ID, &user.Name, &user.Email, &user.Password)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.NoDataFound {
+			return models.User{}, fmt.Errorf("%s: %w", op, storage.ErrUserNotFound)
+		}
+		return models.User{}, fmt.Errorf("%s: %w", op, err)
+	}
+	return user, nil
 }

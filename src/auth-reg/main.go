@@ -2,6 +2,7 @@ package main
 
 import (
 	"Auth-Reg/internal/config"
+	"Auth-Reg/internal/http-server/handlers/login"
 	"Auth-Reg/internal/http-server/handlers/registr"
 	smtpMid "Auth-Reg/internal/http-server/middleware/smtp"
 	"Auth-Reg/internal/storage/postgres"
@@ -40,6 +41,8 @@ func main() {
 		r.Use(smtpMid.New(log))
 		r.Post("/registration", registr.New(log, storage))
 	})
+
+	router.Get("/login", login.New(log, storage))
 
 	srv := &http.Server{
 		Addr:         cfg.Address,

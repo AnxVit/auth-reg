@@ -6,8 +6,8 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+	"sync"
 
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 )
 
@@ -25,14 +25,17 @@ type Register interface {
 	SaveUser(name, email, password string) error
 }
 
+var once sync.Once
+
 func New(log *slog.Logger, register Register) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		const op = "handlers.registr.New"
 
-		log = log.With(
-			slog.String("op", op),
-			slog.String("request_id", middleware.GetReqID(r.Context())),
-		)
+		once.Do(func() {
+			log = log.With(
+				slog.String("op", op),
+			)
+		})
 
 		var req Request
 
@@ -54,7 +57,10 @@ func New(log *slog.Logger, register Register) http.HandlerFunc {
 		}
 
 		if err != nil {
-			log.Error("falied to save user")
+			log.Error("falied to save user", slog.Attr{
+				Key:   "error",
+				Value: slog.StringValue(err.Error()),
+			})
 			render.JSON(w, r, resp.Error("failed to save user"))
 			return
 		}
