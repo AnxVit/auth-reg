@@ -20,17 +20,19 @@ type HTTPServer struct {
 }
 
 type Storage struct {
-	User     string `yaml:"user" env-default:"postgres" env-required="true"`
-	Password string `yaml:"password" env-required="true"`
-	Host     string `yaml:"host" env-default:"localhost" env-required="true"`
-	Port     int    `yaml:"port" env-default:"5432"`
-	DBName   string `yaml:"dbname" env-required:"true"`
+	User     string `yaml:"user" env:"USER" env-default:"postgres" env-required="true"`
+	Password string `yaml:"password" env:"PASSWORD" env-required="true"`
+	Host     string `yaml:"host" env:"HOST" env-default:"localhost" env-required="true"`
+	Port     int    `yaml:"port" env:"PORT"env-default:"5432"`
+	DBName   string `yaml:"dbname" env:"DBNAME" env-required:"true"`
 }
 
 func MustLoad() *Config {
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
-		log.Fatal("CONFIG_PATH is not set")
+		var cfg Config
+		cleanenv.ReadEnv(&cfg)
+		return &cfg
 	}
 
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {

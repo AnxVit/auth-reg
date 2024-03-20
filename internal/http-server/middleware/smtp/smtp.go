@@ -16,15 +16,14 @@ import (
 
 var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9.!#$%&'*+/=?^_{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$`)
 
-func validateEmail(email string) bool {
+func validateEmail(email string) error {
 	isValid := emailRegex.MatchString(email)
 	if !isValid {
-		return isValid
+		return fmt.Errorf("not correct")
 	}
 
 	from := os.Getenv("EMAIL_FROM")
 	password := os.Getenv("EMAIL_PASS")
-	fmt.Println(from, password)
 
 	host := "smtp.gmail.com"
 	port := "587"
@@ -33,7 +32,7 @@ func validateEmail(email string) bool {
 
 	auth := smtp.PlainAuth("", from, password, host)
 	err := smtp.SendMail(address, auth, from, []string{email}, message)
-	return err == nil
+	return err
 }
 
 func New(log *slog.Logger) func(next http.Handler) http.Handler {
@@ -56,9 +55,12 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 
 			log.Info("request body decoded", slog.Any("request", req))
 
-			isValid := validateEmail(req.Email)
-			if !isValid {
-				log.Error("Not correct email")
+			err = validateEmail(req.Email)
+			if err != nil {
+				log.Error("Not correct email", slog.Attr{
+					Key:   "error",
+					Value: slog.StringValue(err.Error()),
+				})
 				w.WriteHeader(http.StatusBadRequest)
 				return
 			}
