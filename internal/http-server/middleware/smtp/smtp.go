@@ -2,6 +2,9 @@ package smtpmid
 
 import (
 	"Auth-Reg/internal/http-server/handlers/registr"
+	"bytes"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/smtp"
@@ -21,15 +24,15 @@ func validateEmail(email string) bool {
 
 	from := os.Getenv("EMAIL_FROM")
 	password := os.Getenv("EMAIL_PASS")
+	fmt.Println(from, password)
 
 	host := "smtp.gmail.com"
-	port := "578"
+	port := "587"
 	address := host + ":" + port
 	message := []byte("Your email is correct")
 
 	auth := smtp.PlainAuth("", from, password, host)
 	err := smtp.SendMail(address, auth, from, []string{email}, message)
-
 	return err == nil
 }
 
@@ -39,13 +42,17 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 			log.Info("SMTP Logger enabled")
 			var req registr.Request
 
+			body, _ := io.ReadAll(r.Body)
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
+
 			err := render.DecodeJSON(r.Body, &req)
 			if err != nil {
-				log.Error("failed to decode requesr body")
+				log.Error("failed to decode request body")
 				w.WriteHeader(http.StatusBadRequest)
 
 				return
 			}
+			r.Body = io.NopCloser(bytes.NewBuffer(body))
 
 			log.Info("request body decoded", slog.Any("request", req))
 
@@ -56,6 +63,7 @@ func New(log *slog.Logger) func(next http.Handler) http.Handler {
 				return
 			}
 			log.Info("email is correct", slog.String("email", req.Email))
+
 			next.ServeHTTP(w, r)
 		}
 		return http.HandlerFunc(fn)

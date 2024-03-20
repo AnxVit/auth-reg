@@ -14,7 +14,7 @@ import (
 type Request struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
-	Password string `password:"password"`
+	Password string `json:"password"`
 }
 
 type Response struct {
@@ -38,7 +38,10 @@ func New(log *slog.Logger, register Register) http.HandlerFunc {
 
 		err := render.DecodeJSON(r.Body, &req)
 		if err != nil {
-			log.Error("failed to decode request body")
+			log.Error("failed to decode request body", slog.Attr{
+				Key:   "error",
+				Value: slog.StringValue(err.Error()),
+			})
 			render.JSON(w, r, resp.Error("invalid request"))
 			return
 		}
@@ -49,6 +52,7 @@ func New(log *slog.Logger, register Register) http.HandlerFunc {
 			render.JSON(w, r, resp.Error("user already exists"))
 			return
 		}
+
 		if err != nil {
 			log.Error("falied to save user")
 			render.JSON(w, r, resp.Error("failed to save user"))
